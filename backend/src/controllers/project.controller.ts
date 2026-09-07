@@ -14,7 +14,7 @@ export const getAllProjects = async (req: Request, res: Response, next: NextFunc
 
 export const getProjectById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id as string, 10);
+    const id = Number(req.params.id);
     const project = await projectService.getProjectById(id);
     sendSuccess(res, project, 'Project retrieved successfully');
   } catch (error) {
@@ -33,7 +33,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
 
 export const updateProject = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id as string, 10);
+    const id = Number(req.params.id);
     const project = await projectService.updateProject(id, req.body);
     sendSuccess(res, project, 'Project updated successfully');
   } catch (error) {
@@ -43,7 +43,7 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
 
 export const deleteProject = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id as string, 10);
+    const id = Number(req.params.id);
     const result = await projectService.deleteProject(id);
     sendSuccess(res, result, 'Project deleted or deactivated successfully');
   } catch (error) {

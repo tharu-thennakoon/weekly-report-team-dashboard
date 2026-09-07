@@ -5,41 +5,18 @@ A full-stack team reporting and management system that allows individual team me
 
 ---
 
-## Application Screenshots
-
-### Login
-
-![Login](docs/screenshots/login.png)
-
-### Team Member Dashboard
-
-![Team Member Dashboard](docs/screenshots/member-dashboard.png)
-
-### Weekly Report Form
-
-![Weekly Report Form](docs/screenshots/report-form.png)
-
-### Report History
-
-![Report History](docs/screenshots/report-history.png)
-
-### Manager Dashboard
-
-![Manager Dashboard](docs/screenshots/manager-dashboard.png)
-
-### Manager Review
-
-![Manager Review](docs/screenshots/manager-review.png)
-
-### Version History
-
-![Version History](docs/screenshots/version-history.png)
-
-### AI Team Assistant
-
-![AI Team Assistant](docs/screenshots/ai-assistant.png)
-
----
+<!-- 
+Screenshots Directory: docs/screenshots/
+Placeholder references for repository documentation:
+- docs/screenshots/login.png (Login screen with 1-click quick-fill demo buttons)
+- docs/screenshots/member-dashboard.png (Team member workspace & KPIs)
+- docs/screenshots/report-form.png (Weekly report form with structured tasks, blockers, achievements, hours)
+- docs/screenshots/report-history.png (Report submission history)
+- docs/screenshots/manager-dashboard.png (Manager analytics, tasks trend chart, project workload)
+- docs/screenshots/manager-review.png (Report review & feedback interface)
+- docs/screenshots/version-history.png (Immutable report version snapshots)
+- docs/screenshots/ai-assistant.png (Interactive AI Team Assistant drawer)
+-->
 
 ## 2. Key Features
 
@@ -529,21 +506,7 @@ The database seed script (`prisma/seed.ts`) populates:
 
 ---
 
-## 23. Screenshots
 
-### Login
-![Login](docs/login.png)
-
-### Member Dashboard
-![Member Dashboard](docs/member-dashboard.png)
-
-### Manager Dashboard
-![Manager Dashboard](docs/manager-dashboard.png)
-
-### Report Review
-![Review](docs/review.png)
-
----
 
 ## 24. Future Improvements
 

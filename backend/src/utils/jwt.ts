@@ -2,8 +2,8 @@ import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { env } from '../config/env.js';
 
-const JWT_SECRET = env.JWT_SECRET;
-const JWT_EXPIRES_IN = env.JWT_EXPIRES_IN;
+const JWT_SECRET: string = env.JWT_SECRET || 'secret-jwt-key';
+const JWT_EXPIRES_IN = env.JWT_EXPIRES_IN || '7d';
 
 export interface TokenPayload {
   userId: number;
@@ -25,5 +25,5 @@ export const generateToken = (payload: TokenPayload): string => {
  * Verify and decode an incoming JWT string
  */
 export const verifyToken = (token: string): TokenPayload => {
-  return jwt.verify(token, JWT_SECRET) as TokenPayload;
+  return jwt.verify(token, JWT_SECRET) as unknown as TokenPayload;
 };

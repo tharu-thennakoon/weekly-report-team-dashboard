@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import api from '../../../lib/api';
+import { formatDisplayDate } from '../../../lib/date';
 
 export default function ReportDetailPage() {
   const params = useParams();
@@ -78,8 +79,9 @@ export default function ReportDetailPage() {
   }
 
   const isOwner = user?.id === report.userId;
-  const canEdit = isOwner && (report.status === 'DRAFT' || report.status === 'NEEDS_CORRECTION');
-  const canSubmit = isOwner && (report.status === 'DRAFT' || report.status === 'NEEDS_CORRECTION');
+  const isMember = user?.role === 'TEAM_MEMBER';
+  const canEdit = isOwner && isMember && (report.status === 'DRAFT' || report.status === 'NEEDS_CORRECTION');
+  const canSubmit = isOwner && isMember && (report.status === 'DRAFT' || report.status === 'NEEDS_CORRECTION');
   const canReview = isManager && report.status === 'SUBMITTED';
 
   const completedTasks = report.tasks?.filter((t) => !t.isPlannedForNextWeek) || [];
@@ -211,8 +213,8 @@ export default function ReportDetailPage() {
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-400">Sprint Week</div>
                     <div className="font-semibold text-slate-900">
-                      {new Date(report.weekStart).toLocaleDateString()} -{' '}
-                      {new Date(report.weekEnd).toLocaleDateString()}
+                      {formatDisplayDate(report.weekStart)} -{' '}
+                      {formatDisplayDate(report.weekEnd)}
                     </div>
                   </div>
                 </div>

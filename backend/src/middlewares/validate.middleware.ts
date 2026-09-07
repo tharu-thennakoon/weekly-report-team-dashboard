@@ -1,6 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema, ZodError } from 'zod';
+import { ZodSchema, ZodError, ZodIssue } from 'zod';
 import { sendError } from '../utils/response.js';
+
+interface FormattedValidationError {
+  field: string;
+  message: string;
+}
+
+const formatZodIssues = (issues: ZodIssue[]): FormattedValidationError[] => {
+  return issues.map((issue) => ({
+    field: issue.path.join('.'),
+    message: issue.message,
+  }));
+};
 
 /**
  * Validates request body against a Zod schema
@@ -12,10 +24,7 @@ export const validateBody = (schema: ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = (error as any).issues?.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message,
-        })) || error.message;
+        const formattedErrors = formatZodIssues(error.issues);
         sendError(res, 'Validation failed for request body.', 400, formattedErrors);
         return;
       }
@@ -34,14 +43,30 @@ export const validateQuery = (schema: ZodSchema) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = (error as any).issues?.map((err: any) => ({
-          field: err.path.join('.'),
-          message: err.message,
-        })) || error.message;
+        const formattedErrors = formatZodIssues(error.issues);
         sendError(res, 'Validation failed for query parameters.', 400, formattedErrors);
         return;
       }
       sendError(res, 'Malformed query parameters.', 400);
+    }
+  };
+};
+
+/**
+ * Validates request route parameters against a Zod schema
+ */
+export const validateParams = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      req.params = schema.parse(req.params) as any;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const formattedErrors = formatZodIssues(error.issues);
+        sendError(res, 'Validation failed for route parameters.', 400, formattedErrors);
+        return;
+      }
+      sendError(res, 'Malformed route parameters.', 400);
     }
   };
 };

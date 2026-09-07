@@ -50,7 +50,7 @@ export class UserService {
           orderBy: { weekStart: 'desc' },
           include: {
             project: { select: { id: true, name: true } },
-            _count: { select: { tasks: true } },
+            _count: { select: { tasks: { where: { reportVersionId: null } } } },
           },
         },
       },

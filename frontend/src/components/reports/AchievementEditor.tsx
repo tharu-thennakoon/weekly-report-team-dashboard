@@ -27,10 +27,11 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
     onChange(updated);
   };
 
-  const setKeyAchievement = (index: number) => {
+  const toggleKeyAchievement = (index: number) => {
+    const isCurrentlyKey = achievements[index].isKeyAchievement;
     const updated = achievements.map((a, idx) => ({
       ...a,
-      isKeyAchievement: idx === index,
+      isKeyAchievement: idx === index ? !isCurrentlyKey : false,
     }));
     onChange(updated);
   };
@@ -80,12 +81,12 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
             >
               <div className="pt-2">
                 <input
-                  type="radio"
+                  type="checkbox"
                   id={`key-achievement-${idx}`}
                   name="key-achievement"
                   checked={item.isKeyAchievement}
-                  onChange={() => setKeyAchievement(idx)}
-                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  onChange={() => toggleKeyAchievement(idx)}
+                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
                   title="Flag as Key Achievement"
                 />
               </div>

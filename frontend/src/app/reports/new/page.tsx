@@ -14,23 +14,18 @@ import { TaskItem, BlockerItem, AchievementItem, TimeBreakdownItem, Project } fr
 import { Save, Send, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import api from '../../../lib/api';
+import { getCurrentWeekRange } from '../../../lib/date';
 
 export default function CreateReportPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
 
-  // Calculate default Monday & Friday of current week
-  const now = new Date();
-  const day = now.getDay();
-  const diffToMonday = (day === 0 ? -6 : 1) - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday);
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
+  // Calculate default Monday & Friday of current week safely
+  const currentWeek = getCurrentWeekRange();
 
   const [projectId, setProjectId] = useState<number | ''>('');
-  const [weekStart, setWeekStart] = useState<string>(monday.toISOString().split('T')[0]);
-  const [weekEnd, setWeekEnd] = useState<string>(friday.toISOString().split('T')[0]);
+  const [weekStart, setWeekStart] = useState<string>(currentWeek.weekStart);
+  const [weekEnd, setWeekEnd] = useState<string>(currentWeek.weekEnd);
   const [notes, setNotes] = useState('');
   const [links, setLinks] = useState('');
 
@@ -120,7 +115,7 @@ export default function CreateReportPage() {
   };
 
   return (
-    <DashboardLayout allowedRoles={['TEAM_MEMBER', 'MANAGER', 'ADMIN']}>
+    <DashboardLayout allowedRoles={['TEAM_MEMBER']}>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Breadcrumb & Navigation */}
         <div className="flex items-center justify-between">

@@ -10,12 +10,13 @@ import {
   getReportVersions,
 } from '../controllers/report.controller.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.middleware.js';
-import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
+import { validateBody, validateQuery, validateParams } from '../middlewares/validate.middleware.js';
 import {
   createReportSchema,
   updateReportSchema,
   reviewReportSchema,
   reportQuerySchema,
+  idParamSchema,
 } from '../validators/report.validator.js';
 import { Role } from '@prisma/client';
 
@@ -24,28 +25,29 @@ const router = Router();
 // Require authentication on all report endpoints
 router.use(authenticateUser);
 
-// List authenticated user's own reports
+// List authenticated user's own reports (Team Member or any authenticated user)
 router.get('/me', getMyReports);
 
 // Manager / Admin list all reports with filtering & pagination
 router.get('/', requireRole([Role.MANAGER, Role.ADMIN]), validateQuery(reportQuerySchema), getReports);
 
-// Create a new draft report
-router.post('/', validateBody(createReportSchema), createReport);
+// Create a new draft report (Strictly Team Member only)
+router.post('/', requireRole(Role.TEAM_MEMBER), validateBody(createReportSchema), createReport);
 
 // Get single report (ownership or manager/admin checked in service)
-router.get('/:id', getReportById);
+router.get('/:id', validateParams(idParamSchema), getReportById);
 
-// Update a draft or needs_correction report
-router.put('/:id', validateBody(updateReportSchema), updateReport);
+// Update a draft or needs_correction report (Strictly Team Member only)
+router.put('/:id', requireRole(Role.TEAM_MEMBER), validateParams(idParamSchema), validateBody(updateReportSchema), updateReport);
+router.patch('/:id', requireRole(Role.TEAM_MEMBER), validateParams(idParamSchema), validateBody(updateReportSchema), updateReport);
 
-// Submit / Resubmit report (creates version snapshot)
-router.post('/:id/submit', submitReport);
+// Submit / Resubmit report (Strictly Team Member only)
+router.post('/:id/submit', requireRole(Role.TEAM_MEMBER), validateParams(idParamSchema), submitReport);
 
 // Manager / Admin: Review report (Approve or Request Changes)
-router.post('/:id/review', requireRole([Role.MANAGER, Role.ADMIN]), validateBody(reviewReportSchema), reviewReport);
+router.post('/:id/review', requireRole([Role.MANAGER, Role.ADMIN]), validateParams(idParamSchema), validateBody(reviewReportSchema), reviewReport);
 
 // Get version snapshots history for a report
-router.get('/:id/versions', getReportVersions);
+router.get('/:id/versions', validateParams(idParamSchema), getReportVersions);
 
 export default router;

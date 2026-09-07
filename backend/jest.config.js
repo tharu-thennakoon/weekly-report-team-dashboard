@@ -9,6 +9,9 @@ export default {
       'ts-jest',
       {
         useESM: true,
+        diagnostics: {
+          ignoreCodes: [151002],
+        },
         tsconfig: {
           target: 'ES2022',
           module: 'NodeNext',

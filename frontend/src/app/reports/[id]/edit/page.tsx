@@ -15,6 +15,7 @@ import { TaskItem, BlockerItem, AchievementItem, TimeBreakdownItem, Project, Rep
 import { Save, Send, ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import api from '../../../../lib/api';
+import { formatDateOnly } from '../../../../lib/date';
 
 export default function EditReportPage() {
   const router = useRouter();
@@ -52,8 +53,8 @@ export default function EditReportPage() {
 
         // Populate fields
         setProjectId(rep.projectId);
-        setWeekStart(rep.weekStart.split('T')[0]);
-        setWeekEnd(rep.weekEnd.split('T')[0]);
+        setWeekStart(formatDateOnly(rep.weekStart));
+        setWeekEnd(formatDateOnly(rep.weekEnd));
         setNotes(rep.notes || '');
         setLinks(rep.links || '');
         setTasks(rep.tasks || []);
@@ -115,7 +116,7 @@ export default function EditReportPage() {
 
   if (isLoading || !report) {
     return (
-      <DashboardLayout allowedRoles={['TEAM_MEMBER', 'MANAGER', 'ADMIN']}>
+      <DashboardLayout allowedRoles={['TEAM_MEMBER']}>
         <div className="animate-pulse space-y-6 max-w-5xl mx-auto">
           <div className="h-8 bg-slate-200 rounded w-1/3"></div>
           <div className="h-48 bg-slate-200 rounded-xl"></div>
@@ -128,7 +129,7 @@ export default function EditReportPage() {
   const latestReview = report.reviews?.[0];
 
   return (
-    <DashboardLayout allowedRoles={['TEAM_MEMBER', 'MANAGER', 'ADMIN']}>
+    <DashboardLayout allowedRoles={['TEAM_MEMBER']}>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Breadcrumb & Top Actions */}
         <div className="flex items-center justify-between">

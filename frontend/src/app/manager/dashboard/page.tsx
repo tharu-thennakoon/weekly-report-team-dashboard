@@ -23,6 +23,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -67,6 +69,7 @@ export default function ManagerDashboardPage() {
     charts: {
       projectWorkload: { name: string; tasks: number; hours: number }[];
       timeSpentByCategory: { category: string; hours: number }[];
+      tasksCompletedTrend?: { week: string; completedTasks: number }[];
       statusCounts: {
         APPROVED: number;
         SUBMITTED: number;
@@ -381,6 +384,49 @@ export default function ManagerDashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Tasks Completed Trend Chart (Fix 11) */}
+        <Card>
+          <CardHeader
+            title="Tasks Completed Trend (Last 5 Weeks)"
+            subtitle="Historical deliverable velocity and completion trend based on active report data"
+          />
+          <CardContent className="p-4">
+            <div className="h-64 w-full">
+              {!charts.tasksCompletedTrend || charts.tasksCompletedTrend.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                  No historical trend data available.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={charts.tasksCompletedTrend} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '12px',
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                    <Line
+                      type="monotone"
+                      dataKey="completedTasks"
+                      name="Completed Tasks"
+                      stroke="#4f46e5"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: '#4f46e5' }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Lower Row: Time Spent Breakdown + Reports Awaiting Review */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

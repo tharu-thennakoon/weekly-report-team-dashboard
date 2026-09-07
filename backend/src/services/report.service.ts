@@ -1,28 +1,60 @@
 import prisma from '../config/prisma.js';
-import { Role, ReportStatus, ReviewAction } from '@prisma/client';
+import { Role, ReportStatus, ReviewAction, Priority, TaskStatus, TimeCategory } from '@prisma/client';
+import { parseDateOnly, parseDateOnlyEnd } from '../utils/date.js';
+
+export interface TaskDTO {
+  id?: number;
+  name: string;
+  priority?: Priority;
+  plannedPercent?: number;
+  actualPercent?: number;
+  status?: TaskStatus;
+  plannedHours?: number;
+  actualHours?: number;
+  deliverable?: string | null;
+  isPlannedForNextWeek?: boolean;
+}
+
+export interface BlockerDTO {
+  id?: number;
+  description: string;
+  isKeyBlocker?: boolean;
+}
+
+export interface AchievementDTO {
+  id?: number;
+  description: string;
+  isKeyAchievement?: boolean;
+}
+
+export interface TimeBreakdownDTO {
+  id?: number;
+  category: TimeCategory;
+  hours?: number;
+}
 
 export interface CreateReportDTO {
   projectId: number;
-  weekStart: Date;
-  weekEnd: Date;
+  weekStart: Date | string;
+  weekEnd: Date | string;
   notes?: string | null;
   links?: string | null;
-  tasks?: any[];
-  blockers?: any[];
-  achievements?: any[];
-  timeBreakdowns?: any[];
+  tasks?: TaskDTO[];
+  blockers?: BlockerDTO[];
+  achievements?: AchievementDTO[];
+  timeBreakdowns?: TimeBreakdownDTO[];
 }
 
 export interface UpdateReportDTO {
   projectId?: number;
-  weekStart?: Date;
-  weekEnd?: Date;
+  weekStart?: Date | string;
+  weekEnd?: Date | string;
   notes?: string | null;
   links?: string | null;
-  tasks?: any[];
-  blockers?: any[];
-  achievements?: any[];
-  timeBreakdowns?: any[];
+  tasks?: TaskDTO[];
+  blockers?: BlockerDTO[];
+  achievements?: AchievementDTO[];
+  timeBreakdowns?: TimeBreakdownDTO[];
 }
 
 export interface ReportQueryFilters {
@@ -34,6 +66,13 @@ export interface ReportQueryFilters {
   search?: string;
   weekStart?: string;
   weekEnd?: string;
+}
+
+interface RequestingUser {
+  userId: number;
+  role: Role;
+  name?: string;
+  email?: string;
 }
 
 export class ReportService {
@@ -52,10 +91,10 @@ export class ReportService {
     if (filters.userId) where.userId = filters.userId;
 
     if (filters.weekStart) {
-      where.weekStart = { gte: new Date(filters.weekStart) };
+      where.weekStart = { gte: parseDateOnly(filters.weekStart) };
     }
     if (filters.weekEnd) {
-      where.weekEnd = { lte: new Date(filters.weekEnd) };
+      where.weekEnd = { lte: parseDateOnlyEnd(filters.weekEnd) };
     }
 
     if (filters.search) {
@@ -79,9 +118,9 @@ export class ReportService {
           project: { select: { id: true, name: true } },
           _count: {
             select: {
-              tasks: true,
-              blockers: true,
-              achievements: true,
+              tasks: { where: { reportVersionId: null } },
+              blockers: { where: { reportVersionId: null } },
+              achievements: { where: { reportVersionId: null } },
               versions: true,
               reviews: true,
             },
@@ -118,7 +157,12 @@ export class ReportService {
       include: {
         project: { select: { id: true, name: true } },
         _count: {
-          select: { tasks: true, blockers: true, achievements: true, versions: true },
+          select: {
+            tasks: { where: { reportVersionId: null } },
+            blockers: { where: { reportVersionId: null } },
+            achievements: { where: { reportVersionId: null } },
+            versions: true,
+          },
         },
         reviews: {
           take: 1,
@@ -134,7 +178,7 @@ export class ReportService {
   /**
    * Get single report by ID with ownership enforcement
    */
-  async getReportById(id: number, requestingUser: { userId: number; role: Role }) {
+  async getReportById(id: number, requestingUser: RequestingUser) {
     const report = await prisma.report.findUnique({
       where: { id },
       include: {
@@ -188,7 +232,7 @@ export class ReportService {
       throw error;
     }
 
-    // Role-based authorization check
+    // Role-based authorization check: Team Member cannot view another member's report
     if (requestingUser.role === Role.TEAM_MEMBER && report.userId !== requestingUser.userId) {
       const error: any = new Error('Forbidden: You do not have permission to view this report.');
       error.statusCode = 403;
@@ -199,12 +243,46 @@ export class ReportService {
   }
 
   /**
-   * Create a new draft report (Team Member)
+   * Create a new draft report (Team Member only)
    */
   async createReport(userId: number, data: CreateReportDTO) {
+    const weekStartDate = parseDateOnly(data.weekStart);
+    const weekEndDate = parseDateOnlyEnd(data.weekEnd);
+
+    // 1. Verify project exists and is active
     const project = await prisma.project.findUnique({ where: { id: data.projectId } });
     if (!project) {
       const error: any = new Error('Selected project does not exist.');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (!project.isActive) {
+      const error: any = new Error('Cannot assign report to an inactive project.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // 2. Prevent duplicate reports for the same user and weekStart
+    const existingReport = await prisma.report.findFirst({
+      where: {
+        userId,
+        weekStart: weekStartDate,
+      },
+    });
+    if (existingReport) {
+      const error: any = new Error('A weekly report already exists for this week.');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    // 3. Enforce max 1 key blocker & max 1 key achievement
+    if (data.blockers && data.blockers.filter((b) => b.isKeyBlocker === true).length > 1) {
+      const error: any = new Error('Only one key blocker can be selected per report.');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (data.achievements && data.achievements.filter((a) => a.isKeyAchievement === true).length > 1) {
+      const error: any = new Error('Only one key achievement can be selected per report.');
       error.statusCode = 400;
       throw error;
     }
@@ -214,8 +292,8 @@ export class ReportService {
         data: {
           userId,
           projectId: data.projectId,
-          weekStart: data.weekStart,
-          weekEnd: data.weekEnd,
+          weekStart: weekStartDate,
+          weekEnd: weekEndDate,
           status: ReportStatus.DRAFT,
           notes: data.notes,
           links: data.links,
@@ -228,10 +306,10 @@ export class ReportService {
           data: data.tasks.map((t) => ({
             reportId: report.id,
             name: t.name,
-            priority: t.priority,
+            priority: t.priority || Priority.MEDIUM,
             plannedPercent: t.plannedPercent ?? 0,
             actualPercent: t.actualPercent ?? 0,
-            status: t.status,
+            status: t.status || TaskStatus.NOT_STARTED,
             plannedHours: t.plannedHours ?? 0,
             actualHours: t.actualHours ?? 0,
             deliverable: t.deliverable,
@@ -270,7 +348,16 @@ export class ReportService {
         });
       }
 
-      return report;
+      return tx.report.findUnique({
+        where: { id: report.id },
+        include: {
+          project: { select: { id: true, name: true } },
+          tasks: { where: { reportVersionId: null } },
+          blockers: { where: { reportVersionId: null } },
+          achievements: { where: { reportVersionId: null } },
+          timeBreakdowns: { where: { reportVersionId: null } },
+        },
+      });
     });
   }
 
@@ -300,13 +387,66 @@ export class ReportService {
       throw error;
     }
 
+    // 1. Verify project if changing
+    if (data.projectId && data.projectId !== report.projectId) {
+      const project = await prisma.project.findUnique({ where: { id: data.projectId } });
+      if (!project) {
+        const error: any = new Error('Selected project does not exist.');
+        error.statusCode = 404;
+        throw error;
+      }
+      if (!project.isActive) {
+        const error: any = new Error('Cannot assign report to an inactive project.');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    // 2. Date validation
+    const newWeekStart = data.weekStart !== undefined ? parseDateOnly(data.weekStart) : report.weekStart;
+    const newWeekEnd = data.weekEnd !== undefined ? parseDateOnlyEnd(data.weekEnd) : report.weekEnd;
+
+    if (newWeekStart > newWeekEnd) {
+      const error: any = new Error('Week start date must be before or equal to week end date');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // 3. Prevent duplicate week report if changing weekStart
+    if (data.weekStart !== undefined) {
+      const duplicate = await prisma.report.findFirst({
+        where: {
+          userId,
+          weekStart: newWeekStart,
+          id: { not: id },
+        },
+      });
+      if (duplicate) {
+        const error: any = new Error('A weekly report already exists for this week.');
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+
+    // 4. Enforce max 1 key blocker & max 1 key achievement
+    if (data.blockers && data.blockers.filter((b) => b.isKeyBlocker === true).length > 1) {
+      const error: any = new Error('Only one key blocker can be selected per report.');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (data.achievements && data.achievements.filter((a) => a.isKeyAchievement === true).length > 1) {
+      const error: any = new Error('Only one key achievement can be selected per report.');
+      error.statusCode = 400;
+      throw error;
+    }
+
     return prisma.$transaction(async (tx) => {
       await tx.report.update({
         where: { id },
         data: {
           ...(data.projectId && { projectId: data.projectId }),
-          ...(data.weekStart && { weekStart: data.weekStart }),
-          ...(data.weekEnd && { weekEnd: data.weekEnd }),
+          ...(data.weekStart !== undefined && { weekStart: newWeekStart }),
+          ...(data.weekEnd !== undefined && { weekEnd: newWeekEnd }),
           ...(data.notes !== undefined && { notes: data.notes }),
           ...(data.links !== undefined && { links: data.links }),
         },
@@ -319,10 +459,10 @@ export class ReportService {
             data: data.tasks.map((t) => ({
               reportId: id,
               name: t.name,
-              priority: t.priority,
+              priority: t.priority || Priority.MEDIUM,
               plannedPercent: t.plannedPercent ?? 0,
               actualPercent: t.actualPercent ?? 0,
-              status: t.status,
+              status: t.status || TaskStatus.NOT_STARTED,
               plannedHours: t.plannedHours ?? 0,
               actualHours: t.actualHours ?? 0,
               deliverable: t.deliverable,
@@ -583,7 +723,7 @@ export class ReportService {
   /**
    * Get version history for a report
    */
-  async getReportVersions(reportId: number, requestingUser: { userId: number; role: Role }) {
+  async getReportVersions(reportId: number, requestingUser: RequestingUser) {
     await this.getReportById(reportId, requestingUser);
 
     return prisma.reportVersion.findMany({

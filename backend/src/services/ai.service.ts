@@ -2,31 +2,14 @@ import prisma from '../config/prisma.js';
 import { Role, ReportStatus, TaskStatus } from '@prisma/client';
 import { AI_SYSTEM_PROMPT } from '../config/aiPrompt.js';
 import { ChatInput } from '../validators/ai.validator.js';
+import { formatDateOnly, getWeekRange } from '../utils/date.js';
 
 export class AiService {
   /**
    * Helper to determine week date range
    */
   private getTargetWeekRange(weekStartStr?: string, weekEndStr?: string) {
-    if (weekStartStr && weekEndStr) {
-      return {
-        weekStart: new Date(weekStartStr),
-        weekEnd: new Date(weekEndStr),
-      };
-    }
-
-    const now = new Date();
-    const day = now.getDay();
-    const diffToMonday = (day === 0 ? -6 : 1) - day;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const friday = new Date(monday);
-    friday.setDate(monday.getDate() + 4);
-    friday.setHours(23, 59, 59, 999);
-
-    return { weekStart: monday, weekEnd: friday };
+    return getWeekRange(weekStartStr, weekEndStr);
   }
 
   /**
@@ -133,7 +116,7 @@ export class AiService {
 
     // 3. Build safe, privacy-preserving structured context (NO passwords, NO tokens, NO hashes)
     const structuredContext = {
-      sprintWeek: `${weekStart.toISOString().split('T')[0]} to ${weekEnd.toISOString().split('T')[0]}`,
+      sprintWeek: `${formatDateOnly(weekStart)} to ${formatDateOnly(weekEnd)}`,
       metrics: {
         totalTeamMembers: teamMembers.length,
         submitted: reports.filter((r) => r.status === ReportStatus.SUBMITTED).length,
@@ -194,8 +177,8 @@ export class AiService {
     return {
       answer,
       week: {
-        start: weekStart.toISOString().split('T')[0],
-        end: weekEnd.toISOString().split('T')[0],
+        start: formatDateOnly(weekStart),
+        end: formatDateOnly(weekEnd),
       },
     };
   }

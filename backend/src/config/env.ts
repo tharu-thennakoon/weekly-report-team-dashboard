@@ -1,7 +1,13 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
 
-if (!process.env.JWT_SECRET) {
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.test'), override: true });
+} else {
+  dotenv.config();
+}
+
+if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'test') {
   throw new Error('JWT_SECRET is required');
 }
 

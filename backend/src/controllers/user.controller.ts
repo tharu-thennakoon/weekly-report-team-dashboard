@@ -16,7 +16,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id as string, 10);
+    const id = Number(req.params.id);
     const user = await userService.getUserById(id);
     sendSuccess(res, user, 'User details retrieved');
   } catch (error) {
@@ -26,7 +26,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 
 export const updateUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id as string, 10);
+    const id = Number(req.params.id);
     const user = await userService.updateUserRole(id, req.body.role);
     sendSuccess(res, user, 'User role updated successfully');
   } catch (error) {
@@ -36,7 +36,7 @@ export const updateUserRole = async (req: Request, res: Response, next: NextFunc
 
 export const updateUserStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = parseInt(req.params.id as string, 10);
+    const id = Number(req.params.id);
     const user = await userService.updateUserStatus(id, req.body.isActive);
     sendSuccess(res, user, 'User active status updated');
   } catch (error) {

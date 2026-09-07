@@ -1,44 +1,25 @@
 import prisma from '../config/prisma.js';
 import { ReportStatus, TaskStatus, Role } from '@prisma/client';
+import { formatDateOnly, getWeekRange, WeekRangeResult } from '../utils/date.js';
 
-export interface WeekRange {
-  weekStart: Date;
-  weekEnd: Date;
+export interface TasksCompletedTrendItem {
+  week: string;
+  completedTasks: number;
 }
 
 export class DashboardService {
   /**
    * Helper to determine Monday-Friday date range for a given date or range
    */
-  public getWeekRange(startDateParam?: string, endDateParam?: string, targetDateParam?: string): WeekRange {
-    if (startDateParam && endDateParam) {
-      const start = new Date(startDateParam);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(endDateParam);
-      end.setHours(23, 59, 59, 999);
-      return { weekStart: start, weekEnd: end };
-    }
-
-    const baseDate = targetDateParam ? new Date(targetDateParam) : (startDateParam ? new Date(startDateParam) : new Date());
-    const day = baseDate.getDay();
-    const diffToMonday = (day === 0 ? -6 : 1) - day;
-    
-    const monday = new Date(baseDate);
-    monday.setDate(baseDate.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-
-    const friday = new Date(monday);
-    friday.setDate(monday.getDate() + 4);
-    friday.setHours(23, 59, 59, 999);
-
-    return { weekStart: monday, weekEnd: friday };
+  public getWeekRange(startDateParam?: string, endDateParam?: string, targetDateParam?: string): WeekRangeResult {
+    return getWeekRange(startDateParam, endDateParam, targetDateParam);
   }
 
   /**
    * Member Dashboard Analytics
    */
   async getMemberDashboard(userId: number) {
-    const { weekStart, weekEnd } = this.getWeekRange();
+    const { weekStart, weekEnd, weekStartStr, weekEndStr } = this.getWeekRange();
 
     // 1. Current week report
     const currentReport = await prisma.report.findFirst({
@@ -84,7 +65,7 @@ export class DashboardService {
     });
 
     return {
-      currentWeek: { weekStart, weekEnd },
+      currentWeek: { weekStart, weekEnd, weekStartStr, weekEndStr },
       currentReport,
       stats: {
         totalReports,
@@ -101,7 +82,7 @@ export class DashboardService {
    * Strictly scopes ALL metrics, workload, time breakdowns, blockers, and compliance to the selected week.
    */
   async getManagerDashboard(startDateParam?: string, endDateParam?: string, targetDateParam?: string) {
-    const { weekStart, weekEnd } = this.getWeekRange(startDateParam, endDateParam, targetDateParam);
+    const { weekStart, weekEnd, weekStartStr, weekEndStr } = this.getWeekRange(startDateParam, endDateParam, targetDateParam);
     const now = new Date();
     const isDeadlinePassed = now.getTime() > weekEnd.getTime();
 
@@ -264,8 +245,13 @@ export class DashboardService {
       .filter((r) => r.status === ReportStatus.SUBMITTED)
       .sort((a, b) => (b.submittedAt?.getTime() || 0) - (a.submittedAt?.getTime() || 0));
 
-    // 10. Recent reviews within this reporting context
+    // 10. Recent reviews within this reporting context (Filtered by selected week)
     const recentActivity = await prisma.review.findMany({
+      where: {
+        report: {
+          weekStart: { gte: weekStart, lte: weekEnd },
+        },
+      },
       take: 6,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -279,10 +265,30 @@ export class DashboardService {
       },
     });
 
+    // 11. Tasks Completed Trend over the last 5 reporting weeks (Fix 11)
+    const tasksCompletedTrend: TasksCompletedTrendItem[] = [];
+    for (let i = 4; i >= 0; i--) {
+      const ws = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() - (i * 7), 0, 0, 0, 0);
+      const we = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 4, 23, 59, 59, 999);
+      const count = await prisma.task.count({
+        where: {
+          reportVersionId: null,
+          status: TaskStatus.COMPLETED,
+          report: {
+            weekStart: { gte: ws, lte: we },
+          },
+        },
+      });
+      tasksCompletedTrend.push({
+        week: formatDateOnly(ws),
+        completedTasks: count,
+      });
+    }
+
     return {
       selectedWeek: {
-        weekStart: weekStart.toISOString().split('T')[0],
-        weekEnd: weekEnd.toISOString().split('T')[0],
+        weekStart: weekStartStr,
+        weekEnd: weekEndStr,
         isDeadlinePassed,
       },
       kpis: {
@@ -301,6 +307,7 @@ export class DashboardService {
         timeSpentByCategory,
         statusCounts,
         memberStatuses,
+        tasksCompletedTrend,
       },
       awaitingReview,
       recentActivity,
@@ -311,7 +318,7 @@ export class DashboardService {
    * Weekly Overview Matrix Table (Compares all team members side by side for a given week)
    */
   async getWeeklyOverview(targetWeekDate?: string, startDateParam?: string, endDateParam?: string) {
-    const { weekStart, weekEnd } = this.getWeekRange(startDateParam, endDateParam, targetWeekDate);
+    const { weekStart, weekEnd, weekStartStr, weekEndStr } = this.getWeekRange(startDateParam, endDateParam, targetWeekDate);
     const now = new Date();
     const isDeadlinePassed = now.getTime() > weekEnd.getTime();
 
@@ -385,8 +392,8 @@ export class DashboardService {
 
     return {
       week: {
-        weekStart: weekStart.toISOString().split('T')[0],
-        weekEnd: weekEnd.toISOString().split('T')[0],
+        weekStart: weekStartStr,
+        weekEnd: weekEndStr,
       },
       matrix,
     };
@@ -394,4 +401,3 @@ export class DashboardService {
 }
 
 export const dashboardService = new DashboardService();
-

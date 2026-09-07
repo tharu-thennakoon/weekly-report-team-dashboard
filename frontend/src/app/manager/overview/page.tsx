@@ -10,6 +10,8 @@ import { Input } from '../../../components/ui/Input';
 import { Calendar, Eye, AlertTriangle, Trophy, CheckSquare, Clock } from 'lucide-react';
 import api from '../../../lib/api';
 
+import { formatDateOnly } from '../../../lib/date';
+
 interface MatrixRow {
   memberId: number;
   memberName: string;
@@ -27,7 +29,7 @@ interface MatrixRow {
 
 export default function WeeklyOverviewPage() {
   const [targetDate, setTargetDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+    formatDateOnly(new Date())
   );
   const [data, setData] = useState<{
     week: { weekStart: string; weekEnd: string };

@@ -103,6 +103,7 @@ model Report {
   timeBreakdowns       TimeBreakdown[]
   reviews              Review[]
 
+  @@unique([userId, weekStart])
   @@index([userId])
   @@index([projectId])
   @@index([status])

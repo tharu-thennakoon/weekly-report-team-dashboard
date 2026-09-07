@@ -24,11 +24,11 @@ export const BlockerEditor: React.FC<BlockerEditorProps> = ({ blockers, onChange
     onChange(updated);
   };
 
-  const setKeyBlocker = (index: number) => {
-    // Only one key blocker allowed
+  const toggleKeyBlocker = (index: number) => {
+    const isCurrentlyKey = blockers[index].isKeyBlocker;
     const updated = blockers.map((b, idx) => ({
       ...b,
-      isKeyBlocker: idx === index,
+      isKeyBlocker: idx === index ? !isCurrentlyKey : false,
     }));
     onChange(updated);
   };
@@ -79,12 +79,12 @@ export const BlockerEditor: React.FC<BlockerEditorProps> = ({ blockers, onChange
             >
               <div className="pt-2">
                 <input
-                  type="radio"
+                  type="checkbox"
                   id={`key-blocker-${idx}`}
                   name="key-blocker"
                   checked={blocker.isKeyBlocker}
-                  onChange={() => setKeyBlocker(idx)}
-                  className="w-4 h-4 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                  onChange={() => toggleKeyBlocker(idx)}
+                  className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer"
                   title="Flag as Key Blocker"
                 />
               </div>
