@@ -5,18 +5,6 @@ A full-stack team reporting and management system that allows individual team me
 
 ---
 
-<!-- 
-Screenshots Directory: docs/screenshots/
-Placeholder references for repository documentation:
-- docs/screenshots/login.png (Login screen with 1-click quick-fill demo buttons)
-- docs/screenshots/member-dashboard.png (Team member workspace & KPIs)
-- docs/screenshots/report-form.png (Weekly report form with structured tasks, blockers, achievements, hours)
-- docs/screenshots/report-history.png (Report submission history)
-- docs/screenshots/manager-dashboard.png (Manager analytics, tasks trend chart, project workload)
-- docs/screenshots/manager-review.png (Report review & feedback interface)
-- docs/screenshots/version-history.png (Immutable report version snapshots)
-- docs/screenshots/ai-assistant.png (Interactive AI Team Assistant drawer)
--->
 
 ## 2. Key Features
 
@@ -554,15 +542,13 @@ The application includes a built-in **AI Team Assistant** accessible on the Mana
 
 ---
 
-## 26. Authors
+<img width="1917" height="901" alt="image" src="https://github.com/user-attachments/assets/b5187613-72be-4238-9072-7ef648b7df67" />
+<img width="1913" height="901" alt="image" src="https://github.com/user-attachments/assets/2c88ee40-62cb-4848-a5ca-df43bc5be23d" />
+<img width="1916" height="892" alt="image" src="https://github.com/user-attachments/assets/4b059b35-b05d-406e-9474-1b3d8b61467e" />
+<img width="1917" height="901" alt="image" src="https://github.com/user-attachments/assets/40d0376c-1eb3-47b3-957d-0e9e2fe33770" />
+<img width="1916" height="902" alt="image" src="https://github.com/user-attachments/assets/9335f488-6ae8-471c-8c1f-7c9e3b7a0864" />
 
-Tharu Thennakoon
 
-BSc (Hons) Computer Science  
-Informatics Institute of Technology / University of Westminster
 
----
 
-## 27. License
 
-This project was developed as a technical assignment.
